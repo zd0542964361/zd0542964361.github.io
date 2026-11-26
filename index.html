@@ -160,7 +160,7 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
         <p id="rOrig"></p>
         <div style="text-align:end;margin-top:8px"><button class="cp" onclick="cp(this,'orig')">📋 העתק</button></div>
       </details>
-      <button class="big dark" id="rReply" onclick="openReply(true)">↩️ להשיב באנגלית</button>
+      <button class="big dark" id="rReply" onclick="openReply(true, last && last.language === 'he' ? 'he' : 'en')">↩️ להשיב באנגלית</button>
       <button class="big light" onclick="pick()">📂 הקלטה נוספת</button>
       <button class="back" onclick="go('home')">→ למסך הבית</button>
     </section>
@@ -169,7 +169,7 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
     <section class="screen" id="reply">
       <h2 id="repTitle">↩️ תשובה באנגלית</h2>
       <div class="ctx" id="repCtx" hidden>עונה ל: <b id="repCtxT"></b></div>
-      <p class="mute" style="margin-top:0">מקליטים או כותבים בעברית, ומקבלים אנגלית מוכנה לשליחה.</p>
+      <p class="mute" style="margin-top:0" id="repSub">מקליטים או כותבים בעברית, ומקבלים אנגלית מוכנה לשליחה.</p>
       <div class="mic">
         <button id="micBtn" aria-label="להקליט" onclick="toggleRec()">🎙️</button>
         <div class="t" id="micT">לחיצה אחת ומדברים</div>
@@ -179,14 +179,14 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
       <button class="big teal" id="repGo" onclick="doReply()">🇺🇸 לתרגם לאנגלית</button>
       <div class="msg" id="repMsg"></div>
       <div class="block out" id="repOut" hidden>
-        <div class="lbl">🇺🇸 באנגלית, מוכן לשליחה</div>
+        <div class="lbl" id="repOutLbl">🇺🇸 באנגלית, מוכן לשליחה</div>
         <p class="en" id="repEn" dir="ltr"></p>
-        <div class="back-he"><b>זה אומר:</b> <span id="repBack"></span></div>
+        <div class="back-he" id="repBackBox"><b>זה אומר:</b> <span id="repBack"></span></div>
         <div class="row2">
           <button class="big light" id="repCp" onclick="cpReply(this)">📋 העתק</button>
           <button class="big wa" onclick="shareReply()">📤 וואטסאפ</button>
         </div>
-        <p class="mute" style="font-size:14px;margin-top:8px">רוצה לשנות? מתקנים את העברית למעלה ולוחצים שוב "לתרגם".</p>
+        <p class="mute" style="font-size:14px;margin-top:8px" id="repFix">רוצה לשנות? מתקנים את העברית למעלה ולוחצים שוב "לתרגם".</p>
       </div>
       <button class="back" onclick="go(replyCtx ? 'result' : 'home')">→ חזרה</button>
     </section>
@@ -245,12 +245,13 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
         <li>בוואטסאפ: לחיצה ארוכה על ההודעה הקולית.</li>
         <li><b>שיתוף</b> ⤴ ← <b>תמלול בכיף</b>.</li>
         <li>אחרי כמה שניות מופיעים: <b>בקצרה</b>, <b>התרגום המלא</b>, ו<b>המקור באנגלית</b> (לחיצה פותחת).</li>
-        <li>הודעה בעברית: מקבלים תקציר ואת מה שנאמר, בלי תרגום.</li>
+        <li>הודעה בעברית: מקבלים תקציר ואת מה שנאמר, בלי תרגום. אפשר ללחוץ <b>"↩️ להשיב"</b> ולקבל תשובה מסודרת בעברית.</li>
       </ol>
       <h3>3. תשובה באנגלית ↩️</h3>
       <ol>
         <li>אחרי תרגום של הודעה באנגלית לוחצים <b>"↩️ להשיב באנגלית"</b>. להודעה חדשה מאפס: <b>"✍️ לכתוב באנגלית"</b> במסך הפתיחה.</li>
         <li>לוחצים על <b>🎙️</b>, מדברים בעברית, ולוחצים שוב לסיום. או כותבים בתיבה ולוחצים <b>"לתרגם לאנגלית"</b>.</li>
+        <li>אחרי הודעה בעברית הכפתור נקרא <b>"↩️ להשיב"</b>: מקבלים את מה שאמרת כהודעה מסודרת בעברית, עם פיסוק ובלי "אממ".</li>
         <li>מופיעה האנגלית, ומתחתיה <b>"זה אומר:"</b> בעברית, כדי לבדוק שהתרגום נכון.</li>
         <li>לא מדויק? מתקנים את העברית בתיבה ולוחצים שוב "לתרגם".</li>
         <li><b>"📤 וואטסאפ"</b> פותח את וואטסאפ עם הטקסט. בוחרים את האדם ושולחים. אפשר גם "📋 העתק" ולהדביק.</li>
@@ -286,9 +287,10 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
 </div>
 
 <script>
-var VERSION = '1.2';
+var VERSION = '1.3';
 var FN = 'https://dmhxovlepdoobkoiyjhj.supabase.co/functions/v1/tamlul';
 var NEWS = [
+  { v: '1.3', d: '26.11.2026', items: ['↩️ אפשר להשיב גם להודעה בעברית! אחרי התמלול לוחצים "להשיב", מקליטים או כותבים, ומקבלים הודעה מסודרת בעברית: עם פיסוק ובלי "אממ".', '📤 "וואטסאפ" פותח את וואטסאפ עם ההודעה מוכנה.'] },
   { v: '1.2', d: '26.11.2026', items: ['↩️ חדש: תשובה באנגלית! אחרי תרגום לוחצים "להשיב באנגלית", מקליטים או כותבים בעברית, ומקבלים אנגלית מוכנה.', '✅ מתחת לאנגלית מופיע "זה אומר:" בעברית, כדי לוודא שהתרגום נכון.', '📤 כפתור "📤 וואטסאפ" פותח את וואטסאפ עם הטקסט. בוחרים את האדם ושולחים.', '✍️ במסך הפתיחה: "לכתוב באנגלית", להודעה חדשה מאפס.'], phone: 'בפעם הראשונה שלוחצים על 🎙️, הטלפון שואל על המיקרופון. לוחצים "אישור" או "בזמן השימוש באפליקציה".' },
   { v: '1.1', d: '25.11.2026', items: ['🏠 כתובת חדשה משלו: zd0542964361.github.io. בזכותה "תמלול בכיף" מותקן כאפליקציה נפרדת, ומופיע ברשימת השיתוף של וואטסאפ.'] },
   { v: '1.0', d: '25.11.2026', items: ['🎉 תמלול בכיף נולד! משתפים הודעה קולית מוואטסאפ ומקבלים תקציר, תרגום והמקור.', '🎨 סמל ושם משלו, כך שלא נפתח יותר הסמל של כסף בכיף.', '🔁 כשהשירות עמוס, האפליקציה מנסה שוב לבד.'] }
@@ -393,7 +395,7 @@ function show(res) {
   $('rSum').textContent = res.summary_he || '';
   $('rTr').textContent = res.translation_he || '';
   $('rTrLbl').textContent = he ? '📝 מה נאמר' : '🇮🇱 התרגום המלא';
-  $('rOrigBox').hidden = he; $('rOrigBox').open = false; $('rReply').hidden = he;
+  $('rOrigBox').hidden = he; $('rOrigBox').open = false; $('rReply').textContent = he ? '↩️ להשיב' : '↩️ להשיב באנגלית';
   $('rOrigLbl').textContent = (res.language === 'en' ? '🇺🇸 המקור באנגלית' : '🌐 המקור');
   $('rOrig').textContent = res.original || '';
   document.querySelectorAll('#result .cp').forEach(function (b) { b.classList.remove('ok'); b.textContent = '📋 העתק'; });
@@ -419,12 +421,19 @@ function showErr(kind) {
 }
 
 /* ---------- ↩️ תשובה באנגלית ---------- */
-var replyCtx = null, rec = null, recChunks = [], recStart = 0, recTick = null, recStop = null, recCancel = false, lastReply = null, replyBusy = false;
-function openReply(withCtx) {
+var replyLang = 'en', replyCtx = null, rec = null, recChunks = [], recStart = 0, recTick = null, recStop = null, recCancel = false, lastReply = null, replyBusy = false;
+function openReply(withCtx, lang) {
+  replyLang = lang === 'he' ? 'he' : 'en'; var he = replyLang === 'he';
   replyCtx = withCtx && last ? (last.original || '') : null;
+  $('repSub').textContent = he ? 'מקליטים או כותבים, ומקבלים הודעה מסודרת בעברית, מוכנה לשליחה.' : 'מקליטים או כותבים בעברית, ומקבלים אנגלית מוכנה לשליחה.';
+  $('repGo').textContent = he ? '✨ לסדר את ההודעה' : '🇺🇸 לתרגם לאנגלית';
+  $('repOutLbl').textContent = he ? '📝 מוכן לשליחה' : '🇺🇸 באנגלית, מוכן לשליחה';
+  $('repEn').dir = he ? 'rtl' : 'ltr'; $('repEn').style.direction = he ? 'rtl' : 'ltr'; $('repEn').style.textAlign = he ? 'right' : 'left';
+  $('repBackBox').hidden = he;
+  $('repFix').textContent = he ? 'רוצה לשנות? מתקנים בתיבה למעלה ולוחצים שוב "לסדר".' : 'רוצה לשנות? מתקנים את העברית למעלה ולוחצים שוב "לתרגם".';
   $('repCtx').hidden = !replyCtx;
   if (replyCtx) $('repCtxT').textContent = last.summary_he || '';
-  $('repTitle').textContent = replyCtx ? '↩️ להשיב באנגלית' : '✍️ לכתוב באנגלית';
+  $('repTitle').textContent = he ? '↩️ להשיב' : replyCtx ? '↩️ להשיב באנגלית' : '✍️ לכתוב באנגלית';
   $('repText').value = ''; $('repOut').hidden = true; $('repMsg').textContent = ''; lastReply = null;
   setMic(false); go('reply');
 }
@@ -479,17 +488,19 @@ function doReply() {
 }
 async function sendReply(inp) {
   replyBusy = true; $('repGo').disabled = true; $('micBtn').disabled = true;
-  repMsg(inp.file ? '⏳ מקשיב ומתרגם…' : '⏳ מתרגם…');
+  var heR = replyLang === 'he';
+  repMsg(inp.file ? (heR ? '⏳ מקשיב ומסדר…' : '⏳ מקשיב ומתרגם…') : (heR ? '⏳ מסדר…' : '⏳ מתרגם…'));
   var slow = setTimeout(function () { repMsg('⏳ השירות קצת עמוס. ממשיך לנסות…'); }, 9000);
   try {
     var j;
-    if (inp.fake) j = await new Promise(function (ok) { setTimeout(function () { ok(inp.fake === 'rec'
+    if (inp.fake && heR) j = await new Promise(function (ok) { setTimeout(function () { ok({ hebrew: 'כן אני יכול להגיע מחר בשמונה רק תזכיר לי איזה תווים', english: 'כן, אני יכול להגיע מחר בשמונה. רק תזכיר לי איזה תווים להביא.', back_he: '' }); }, 1500); });
+    else if (inp.fake) j = await new Promise(function (ok) { setTimeout(function () { ok(inp.fake === 'rec'
       ? { hebrew: 'היי דוד, תודה שפנית. אני פנוי בשתים עשרה בדצמבר. תשלח לי את שם האולם והשעות, ואחזור אליך עם מחיר.', english: "Hi David, thanks for reaching out. I'm available on December 12th. Send me the name of the hall and the hours, and I'll get back to you with a price.", back_he: 'היי David, תודה שפנית. אני פנוי ב־12 בדצמבר. תשלח לי את שם האולם והשעות, ואחזור אליך עם מחיר.' }
       : { hebrew: inp.fake, english: 'Thanks, I got it. I will send you the files tomorrow morning.', back_he: 'תודה, קיבלתי. אשלח לך את הקבצים מחר בבוקר.' }); }, 1500); });
     else {
       var opts = { method: 'POST', headers: { 'x-tamlul-code': store('tamlul-code') || '' } };
-      if (inp.file) { var fd = new FormData(); fd.append('mode', 'reply'); if (replyCtx) fd.append('context', replyCtx.slice(0, 3000)); fd.append('file', inp.file, inp.file.name); opts.body = fd; }
-      else { opts.headers['content-type'] = 'application/json'; opts.body = JSON.stringify({ action: 'reply', text: inp.text, context: replyCtx || '' }); }
+      if (inp.file) { var fd = new FormData(); fd.append('mode', 'reply'); fd.append('lang', replyLang); if (replyCtx) fd.append('context', replyCtx.slice(0, 3000)); fd.append('file', inp.file, inp.file.name); opts.body = fd; }
+      else { opts.headers['content-type'] = 'application/json'; opts.body = JSON.stringify({ action: 'reply', lang: replyLang, text: inp.text, context: replyCtx || '' }); }
       var ctl = new AbortController(); var tm = setTimeout(function () { ctl.abort(); }, 60000); opts.signal = ctl.signal;
       var r;
       try { r = await fetch(FN, opts); } catch (e) { clearTimeout(tm); var er = new Error('network: ' + e); er.kind = navigator.onLine ? 'busy' : 'offline'; throw er; }

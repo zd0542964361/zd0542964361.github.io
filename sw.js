@@ -1,5 +1,5 @@
 // שומר את קבצי האפליקציה לעבודה בלי אינטרנט, ומקבל הקלטות שמשתפים מוואטסאפ.
-const CACHE = 'tamlul-20261126083642';
+const CACHE = 'tamlul-20261126161350';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/favicon-48.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
