@@ -86,6 +86,23 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
 @media (prefers-reduced-motion:reduce){.sheet .box{animation:none}}
 .sheet .grab{width:44px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 10px}
 .new li{margin:6px 0}
+/* תשובה באנגלית */
+.ctx{background:var(--soft);border-radius:14px;padding:10px 14px;font-size:15px;color:var(--mute);margin:4px 0 10px;overflow-wrap:anywhere}
+.ctx b{color:var(--ink)}
+.mic{display:flex;flex-direction:column;align-items:center;gap:6px;margin:10px 0 6px}
+.mic button{width:96px;height:96px;border-radius:50%;border:0;background:var(--teal);color:#fff;font-size:40px;box-shadow:0 6px 18px #0e9c8640}
+.mic button.rec{background:var(--red);box-shadow:0 0 0 0 #d9434b80;animation:pulse 1.4s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 #d9434b70}100%{box-shadow:0 0 0 22px #d9434b00}}
+@media (prefers-reduced-motion:reduce){.mic button.rec{animation:none}}
+.mic .t{font-weight:800;font-size:17px;min-height:26px}
+.or{display:flex;align-items:center;gap:10px;color:var(--mute);font-size:15px;margin:8px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.block.out p.en{direction:ltr;text-align:left;font-size:19px;color:var(--ink);font-weight:600}
+.back-he{background:var(--teal-soft);border-radius:12px;padding:8px 12px;margin-top:10px;font-size:16px;color:var(--ink);overflow-wrap:anywhere}
+.back-he b{color:var(--teal)}
+.row2{display:flex;gap:8px;margin-top:10px}
+.row2 .big{margin:0;font-size:17px;padding:14px 10px}
+.big.wa{background:#1fa855;color:#fff}
 @media (hover:hover) and (pointer:fine){.big:hover{filter:brightness(1.05)}}
 </style>
 </head>
@@ -112,6 +129,7 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
         </ol>
       </div>
       <button class="big teal" onclick="pick()">📂 לבחור הקלטה מהטלפון</button>
+      <button class="big dark" onclick="openReply(false)">✍️ לכתוב באנגלית</button>
       <input type="file" id="file" accept="audio/*,.ogg,.opus,.m4a,.mp3,.aac,.wav,.amr" hidden>
       <button class="big light" id="installBtn" onclick="install()" hidden>📲 להוסיף למסך הבית</button>
       <div class="note" id="installNote" hidden>📲 כדי ש"תמלול בכיף" יופיע ברשימת השיתוף של וואטסאפ, צריך קודם <b>להוסיף אותו למסך הבית</b>. ההוראות ב־❓.</div>
@@ -142,8 +160,35 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
         <p id="rOrig"></p>
         <div style="text-align:end;margin-top:8px"><button class="cp" onclick="cp(this,'orig')">📋 העתק</button></div>
       </details>
+      <button class="big dark" id="rReply" onclick="openReply(true)">↩️ להשיב באנגלית</button>
       <button class="big light" onclick="pick()">📂 הקלטה נוספת</button>
       <button class="back" onclick="go('home')">→ למסך הבית</button>
+    </section>
+
+    <!-- תשובה באנגלית -->
+    <section class="screen" id="reply">
+      <h2 id="repTitle">↩️ תשובה באנגלית</h2>
+      <div class="ctx" id="repCtx" hidden>עונה ל: <b id="repCtxT"></b></div>
+      <p class="mute" style="margin-top:0">מקליטים או כותבים בעברית, ומקבלים אנגלית מוכנה לשליחה.</p>
+      <div class="mic">
+        <button id="micBtn" aria-label="להקליט" onclick="toggleRec()">🎙️</button>
+        <div class="t" id="micT">לחיצה אחת ומדברים</div>
+      </div>
+      <div class="or">או כותבים</div>
+      <textarea id="repText" placeholder="מה לענות? כותבים כאן בעברית…"></textarea>
+      <button class="big teal" id="repGo" onclick="doReply()">🇺🇸 לתרגם לאנגלית</button>
+      <div class="msg" id="repMsg"></div>
+      <div class="block out" id="repOut" hidden>
+        <div class="lbl">🇺🇸 באנגלית, מוכן לשליחה</div>
+        <p class="en" id="repEn" dir="ltr"></p>
+        <div class="back-he"><b>זה אומר:</b> <span id="repBack"></span></div>
+        <div class="row2">
+          <button class="big light" id="repCp" onclick="cpReply(this)">📋 העתק</button>
+          <button class="big wa" onclick="shareReply()">📤 וואטסאפ</button>
+        </div>
+        <p class="mute" style="font-size:14px;margin-top:8px">רוצה לשנות? מתקנים את העברית למעלה ולוחצים שוב "לתרגם".</p>
+      </div>
+      <button class="back" onclick="go(replyCtx ? 'result' : 'home')">→ חזרה</button>
     </section>
 
     <!-- תקלה -->
@@ -202,20 +247,29 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
         <li>אחרי כמה שניות מופיעים: <b>בקצרה</b>, <b>התרגום המלא</b>, ו<b>המקור באנגלית</b> (לחיצה פותחת).</li>
         <li>הודעה בעברית: מקבלים תקציר ואת מה שנאמר, בלי תרגום.</li>
       </ol>
-      <h3>3. אם "תמלול בכיף" לא מופיע בשיתוף</h3>
+      <h3>3. תשובה באנגלית ↩️</h3>
+      <ol>
+        <li>אחרי תרגום של הודעה באנגלית לוחצים <b>"↩️ להשיב באנגלית"</b>. להודעה חדשה מאפס: <b>"✍️ לכתוב באנגלית"</b> במסך הפתיחה.</li>
+        <li>לוחצים על <b>🎙️</b>, מדברים בעברית, ולוחצים שוב לסיום. או כותבים בתיבה ולוחצים <b>"לתרגם לאנגלית"</b>.</li>
+        <li>מופיעה האנגלית, ומתחתיה <b>"זה אומר:"</b> בעברית, כדי לבדוק שהתרגום נכון.</li>
+        <li>לא מדויק? מתקנים את העברית בתיבה ולוחצים שוב "לתרגם".</li>
+        <li><b>"📤 וואטסאפ"</b> פותח את וואטסאפ עם הטקסט. בוחרים את האדם ושולחים. אפשר גם "📋 העתק" ולהדביק.</li>
+        <li>בפעם הראשונה הטלפון שואל על המיקרופון. לוחצים "אישור".</li>
+      </ol>
+      <h3>4. אם "תמלול בכיף" לא מופיע בשיתוף</h3>
       <ul>
         <li>צריך קודם להוסיף אותו למסך הבית (שלב 1).</li>
         <li>אפשר גם לשמור את ההקלטה, ולבחור אותה עם "📂 לבחור הקלטה מהטלפון".</li>
         <li>באייפון אין שיתוף ישיר. שומרים את ההקלטה ל"קבצים" ובוחרים אותה.</li>
       </ul>
-      <h3>4. כשיש תקלה</h3>
+      <h3>5. כשיש תקלה</h3>
       <ul>
         <li>"השירות עמוס": מחכים רגע ולוחצים "לנסות שוב".</li>
         <li>"הקוד לא נכון": ⚙️ ← מקלידים שוב את הקוד.</li>
         <li>בלי אינטרנט אי אפשר לתרגם, אבל האפליקציה נפתחת.</li>
       </ul>
       <h3>🔒 פרטיות</h3>
-      <p>ההקלטה נשלחת לתמלול ולתרגום, ולא נשמרת בשום מקום. השירות החינמי של גוגל רשאי להשתמש בטקסט לשיפור השירות שלו.</p>
+      <p>ההקלטה, וגם התשובה שלך, נשלחות לתמלול ולתרגום, ולא נשמרות בשום מקום. השירות החינמי של גוגל רשאי להשתמש בטקסט לשיפור השירות שלו.</p>
       <button class="back" onclick="go('home')">→ למסך הבית</button>
     </section>
 
@@ -232,9 +286,10 @@ textarea{width:100%;min-height:110px;font-family:inherit;font-size:18px;border:1
 </div>
 
 <script>
-var VERSION = '1.1';
+var VERSION = '1.2';
 var FN = 'https://dmhxovlepdoobkoiyjhj.supabase.co/functions/v1/tamlul';
 var NEWS = [
+  { v: '1.2', d: '26.11.2026', items: ['↩️ חדש: תשובה באנגלית! אחרי תרגום לוחצים "להשיב באנגלית", מקליטים או כותבים בעברית, ומקבלים אנגלית מוכנה.', '✅ מתחת לאנגלית מופיע "זה אומר:" בעברית, כדי לוודא שהתרגום נכון.', '📤 כפתור "📤 וואטסאפ" פותח את וואטסאפ עם הטקסט. בוחרים את האדם ושולחים.', '✍️ במסך הפתיחה: "לכתוב באנגלית", להודעה חדשה מאפס.'], phone: 'בפעם הראשונה שלוחצים על 🎙️, הטלפון שואל על המיקרופון. לוחצים "אישור" או "בזמן השימוש באפליקציה".' },
   { v: '1.1', d: '25.11.2026', items: ['🏠 כתובת חדשה משלו: zd0542964361.github.io. בזכותה "תמלול בכיף" מותקן כאפליקציה נפרדת, ומופיע ברשימת השיתוף של וואטסאפ.'] },
   { v: '1.0', d: '25.11.2026', items: ['🎉 תמלול בכיף נולד! משתפים הודעה קולית מוואטסאפ ומקבלים תקציר, תרגום והמקור.', '🎨 סמל ושם משלו, כך שלא נפתח יותר הסמל של כסף בכיף.', '🔁 כשהשירות עמוס, האפליקציה מנסה שוב לבד.'] }
 ];
@@ -247,6 +302,7 @@ function $(id) { return document.getElementById(id); }
 
 /* ---------- ניווט וכפתור חזור ---------- */
 function go(id, noPush) {
+  if (cur === 'reply' && id !== 'reply') cancelRec();
   document.querySelectorAll('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
   if (!noPush && id !== cur) history.pushState({ s: id }, '', location.pathname + (BDIKA ? '?bdika=1' : '') + '#' + id);
   cur = id; window.scrollTo(0, 0);
@@ -337,7 +393,7 @@ function show(res) {
   $('rSum').textContent = res.summary_he || '';
   $('rTr').textContent = res.translation_he || '';
   $('rTrLbl').textContent = he ? '📝 מה נאמר' : '🇮🇱 התרגום המלא';
-  $('rOrigBox').hidden = he; $('rOrigBox').open = false;
+  $('rOrigBox').hidden = he; $('rOrigBox').open = false; $('rReply').hidden = he;
   $('rOrigLbl').textContent = (res.language === 'en' ? '🇺🇸 המקור באנגלית' : '🌐 המקור');
   $('rOrig').textContent = res.original || '';
   document.querySelectorAll('#result .cp').forEach(function (b) { b.classList.remove('ok'); b.textContent = '📋 העתק'; });
@@ -360,6 +416,113 @@ function showErr(kind) {
   $('eRetry').hidden = kind === 'code' || kind === 'silent';
   $('eRetry').textContent = kind === 'nofile' ? '📂 לבחור הקלטה' : '🔁 לנסות שוב';
   go('err');
+}
+
+/* ---------- ↩️ תשובה באנגלית ---------- */
+var replyCtx = null, rec = null, recChunks = [], recStart = 0, recTick = null, recStop = null, recCancel = false, lastReply = null, replyBusy = false;
+function openReply(withCtx) {
+  replyCtx = withCtx && last ? (last.original || '') : null;
+  $('repCtx').hidden = !replyCtx;
+  if (replyCtx) $('repCtxT').textContent = last.summary_he || '';
+  $('repTitle').textContent = replyCtx ? '↩️ להשיב באנגלית' : '✍️ לכתוב באנגלית';
+  $('repText').value = ''; $('repOut').hidden = true; $('repMsg').textContent = ''; lastReply = null;
+  setMic(false); go('reply');
+}
+function setMic(on) {
+  $('micBtn').classList.toggle('rec', on); $('micBtn').textContent = on ? '⏹️' : '🎙️';
+  $('micBtn').setAttribute('aria-label', on ? 'לסיים ולתרגם' : 'להקליט');
+  if (!on) $('micT').textContent = 'לחיצה אחת ומדברים';
+}
+function repMsg(t, cls) { $('repMsg').className = 'msg ' + (cls || ''); $('repMsg').textContent = t; }
+function needCode() {
+  if (BDIKA || store('tamlul-code')) return false;
+  go('setup'); $('codeMsg').className = 'msg bad'; $('codeMsg').textContent = 'קודם מקלידים את הקוד האישי.'; return true;
+}
+async function toggleRec() {
+  if (replyBusy) return;
+  if (rec) { rec.stop(); return; }
+  if (needCode()) return;
+  if (!BDIKA && !navigator.onLine) { repMsg('אין אינטרנט. מתחברים ומנסים שוב.', 'bad'); return; }
+  if (BDIKA) { sendReply({ fake: 'rec' }); return; }
+  if (!navigator.mediaDevices || !window.MediaRecorder) { repMsg('בטלפון הזה אי אפשר להקליט מתוך האפליקציה. כותבים במקום.', 'bad'); return; }
+  var stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch (e) { repMsg('צריך לאשר גישה למיקרופון. אם נחסם: ⋮ ← הגדרות אתר ← מיקרופון ← לאשר.', 'bad'); return; }
+  var type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg'].find(function (t) { return MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(t); }) || '';
+  try { rec = type ? new MediaRecorder(stream, { mimeType: type }) : new MediaRecorder(stream); }
+  catch (e) { stream.getTracks().forEach(function (t) { t.stop(); }); report(e, 'recorder'); repMsg('ההקלטה לא הצליחה. כותבים במקום.', 'bad'); return; }
+  recChunks = []; recCancel = false;
+  rec.ondataavailable = function (e) { if (e.data && e.data.size) recChunks.push(e.data); };
+  rec.onstop = function () {
+    stream.getTracks().forEach(function (t) { t.stop(); });
+    clearInterval(recTick); clearTimeout(recStop);
+    var mt = rec.mimeType || type || 'audio/webm'; rec = null; setMic(false);
+    if (recCancel) return;
+    var blob = new Blob(recChunks, { type: mt });
+    if (Date.now() - recStart < 700 || blob.size < 1500) { repMsg('ההקלטה קצרה מדי. לוחצים, מדברים, ולוחצים שוב לסיום.', 'bad'); return; }
+    var ext = /mp4/.test(mt) ? 'm4a' : /ogg/.test(mt) ? 'ogg' : 'webm';
+    sendReply({ file: new File([blob], 'reply.' + ext, { type: mt.split(';')[0] }) });
+  };
+  rec.start(); recStart = Date.now(); setMic(true); repMsg('');
+  var tick = function () { var s = Math.floor((Date.now() - recStart) / 1000); $('micT').textContent = '🔴 מקליט ' + Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' · לחיצה לסיום'; };
+  tick(); recTick = setInterval(tick, 500);
+  recStop = setTimeout(function () { if (rec) rec.stop(); }, 180000);
+}
+function cancelRec() { if (rec) { recCancel = true; rec.stop(); } }
+function doReply() {
+  if (replyBusy) return;
+  var t = $('repText').value.trim();
+  if (!t) { repMsg('כותבים בעברית מה לענות, או לוחצים על המיקרופון.', 'bad'); return; }
+  if (needCode()) return;
+  if (!BDIKA && !navigator.onLine) { repMsg('אין אינטרנט. מתחברים ומנסים שוב.', 'bad'); return; }
+  sendReply(BDIKA ? { fake: t } : { text: t });
+}
+async function sendReply(inp) {
+  replyBusy = true; $('repGo').disabled = true; $('micBtn').disabled = true;
+  repMsg(inp.file ? '⏳ מקשיב ומתרגם…' : '⏳ מתרגם…');
+  var slow = setTimeout(function () { repMsg('⏳ השירות קצת עמוס. ממשיך לנסות…'); }, 9000);
+  try {
+    var j;
+    if (inp.fake) j = await new Promise(function (ok) { setTimeout(function () { ok(inp.fake === 'rec'
+      ? { hebrew: 'היי דוד, תודה שפנית. אני פנוי בשתים עשרה בדצמבר. תשלח לי את שם האולם והשעות, ואחזור אליך עם מחיר.', english: "Hi David, thanks for reaching out. I'm available on December 12th. Send me the name of the hall and the hours, and I'll get back to you with a price.", back_he: 'היי David, תודה שפנית. אני פנוי ב־12 בדצמבר. תשלח לי את שם האולם והשעות, ואחזור אליך עם מחיר.' }
+      : { hebrew: inp.fake, english: 'Thanks, I got it. I will send you the files tomorrow morning.', back_he: 'תודה, קיבלתי. אשלח לך את הקבצים מחר בבוקר.' }); }, 1500); });
+    else {
+      var opts = { method: 'POST', headers: { 'x-tamlul-code': store('tamlul-code') || '' } };
+      if (inp.file) { var fd = new FormData(); fd.append('mode', 'reply'); if (replyCtx) fd.append('context', replyCtx.slice(0, 3000)); fd.append('file', inp.file, inp.file.name); opts.body = fd; }
+      else { opts.headers['content-type'] = 'application/json'; opts.body = JSON.stringify({ action: 'reply', text: inp.text, context: replyCtx || '' }); }
+      var ctl = new AbortController(); var tm = setTimeout(function () { ctl.abort(); }, 60000); opts.signal = ctl.signal;
+      var r;
+      try { r = await fetch(FN, opts); } catch (e) { clearTimeout(tm); var er = new Error('network: ' + e); er.kind = navigator.onLine ? 'busy' : 'offline'; throw er; }
+      clearTimeout(tm);
+      j = await r.json().catch(function () { return {}; });
+      if (!r.ok) { var e2 = new Error('reply ' + r.status + ' ' + (j.error || '') + ' ' + (j.detail || '')); e2.kind = j.error || 'other'; throw e2; }
+    }
+    clearTimeout(slow);
+    lastReply = j;
+    if (j.hebrew) $('repText').value = j.hebrew;
+    $('repEn').textContent = j.english || ''; $('repBack').textContent = j.back_he || '';
+    $('repCp').classList.remove('ok'); $('repCp').textContent = '📋 העתק';
+    $('repOut').hidden = false; repMsg('');
+    setTimeout(function () { $('repOut').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+  } catch (e) {
+    clearTimeout(slow);
+    var k = e && e.kind || 'other';
+    if (k === 'busy' || k === 'other') report(e, 'reply');
+    repMsg(k === 'code' ? '🔑 הקוד לא נכון. ⚙️ ← מקלידים שוב.' : k === 'offline' ? '📡 אין אינטרנט. מתחברים ומנסים שוב.' : k === 'silent' ? '🤫 לא שמעתי דיבור. מנסים שוב, קרוב יותר לטלפון.' : k === 'toobig' ? 'ההקלטה ארוכה מדי.' : '😕 השירות עמוס כרגע. מחכים רגע ומנסים שוב.', 'bad');
+  } finally { replyBusy = false; $('repGo').disabled = false; $('micBtn').disabled = false; }
+}
+function cpReply(btn) {
+  if (!lastReply) return; var txt = lastReply.english || '';
+  var done = function () { btn.classList.add('ok'); btn.textContent = '✅ הועתק'; setTimeout(function () { btn.classList.remove('ok'); btn.textContent = '📋 העתק'; }, 1800); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, function () { legacyCopy(txt); done(); });
+  else { legacyCopy(txt); done(); }
+}
+function shareReply() {
+  if (!lastReply) return;
+  var t = lastReply.english || '';
+  if (BDIKA) { repMsg('✅ בטלפון: נפתח וואטסאפ עם הטקסט (מצב בדיקה)', 'good'); return; }
+  if (/Android|iPhone|iPad/i.test(navigator.userAgent)) location.href = 'whatsapp://send?text=' + encodeURIComponent(t);
+  else window.open('https://wa.me/?text=' + encodeURIComponent(t), '_blank');
 }
 
 /* ---------- העתקה ---------- */
@@ -423,7 +586,7 @@ window.addEventListener('unhandledrejection', function (e) { report(e.reason, 'p
 /* ---------- מה חדש ---------- */
 function showNew(all) {
   var list = all ? NEWS : NEWS.filter(function (n) { return n.v === VERSION; });
-  $('newList').innerHTML = list.map(function (n) { return '<p class="mute">גרסה ' + n.v + ' · ' + n.d + '</p><ul>' + n.items.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul>'; }).join('');
+  $('newList').innerHTML = list.map(function (n) { return '<p class="mute">גרסה ' + n.v + ' · ' + n.d + '</p><ul>' + n.items.map(function (i) { return '<li>' + i + '</li>'; }).join('') + '</ul>' + (n.phone ? '<p class="mute">📱 ' + n.phone + '</p>' : ''); }).join('');
   $('newSheet').classList.add('on');
 }
 function closeNew() { $('newSheet').classList.remove('on'); store('tamlul-seen', VERSION); }
